@@ -76,7 +76,7 @@ The database must not live on a network share or a cloud-synced folder.
 ## Migrations
 
 - Migrations run as an explicit step before the app starts, in the same container.
-- The migration step fails startup and leaves the previous container image runnable.
+- A failed migration stops startup and leaves the previous container image runnable.
 - The worker verifies the schema version and refuses to run against an unexpected
   version rather than corrupting data.
 - Before an upgrade, the release notes state whether a backup is mandatory.

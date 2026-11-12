@@ -1,57 +1,95 @@
 # Social Integrations
 
-## Initial targets
+Platforms are integrated directly, one adapter at a time, behind a common contract
+(ADR-0003). A platform is not "supported" until it has published end to end on a
+permitted test account.
 
-- Instagram
-- Facebook
-- LinkedIn
-- X
+## Targets
 
-These are target platforms only. The first connector must be selected after current API feasibility research.
+| Platform | Status | Notes |
+|---|---|---|
+| LinkedIn | Candidate | Documented image flow: initialize upload, transfer to the returned URL, create the post |
+| X | Candidate | Media upload endpoint, then create the post |
+| Facebook | Candidate | Page publishing endpoints; page-level permissions required |
+| Instagram | **Blocked** | Requires media at a public HTTPS URL; a local-only install cannot provide one without a separate decision |
 
-## Required feasibility checklist
+Order is not fixed. The first connector is chosen after the feasibility checklist
+below, and the choice should favour a platform whose approval process the owner can
+actually complete.
 
-For each platform and account type, verify:
+## Feasibility checklist
 
-- Official API product and endpoint.
-- Developer account and app requirements.
-- App review / business verification requirements.
-- Required scopes and permissions.
-- Personal, creator, business, or page account eligibility.
-- Supported post types.
-- Media upload flow and media URL requirements.
-- Image/video size, aspect ratio, duration, and count restrictions.
-- Caption and character counting rules.
-- Rate limits and publishing quotas.
-- Token expiration and refresh rules.
-- Webhook or status polling support.
-- Error codes and retry guidance.
-- Test account availability and test strategy.
+Complete this before writing adapter code, and record the result and research date in
+a per-platform note (`docs/engineering/platforms/<platform>.md` when the first
+connector starts):
 
-## Adapter boundary
+- Official API product, endpoints, and current version.
+- Developer app creation and review/verification requirements.
+- Required scopes and what each one grants.
+- Which account types are eligible (personal, creator, business, page).
+- Supported post types and content combinations.
+- Media upload flow and whether a public URL is required.
+- Image rules: formats, size, aspect ratio, count.
+- Caption rules and how characters are counted.
+- Rate limits, quotas, and the shape of a 429.
+- Token lifetime, refresh behaviour, and revocation semantics.
+- Whether post status can be queried after an ambiguous timeout.
+- Error codes and which are retryable.
+- Redirect URI rules for a local-only installation.
+- Availability of a test account.
 
-Keep provider code behind an internal interface. The rest of Postaal should work with normalized account, validation, media, publish-result, and error objects.
+## Adapter contract
 
-Do not expose provider-specific response objects throughout the application.
+```ts
+interface SocialPlatformAdapter {
+  platform: PlatformId;
 
-## Capability model
+  getAccount(): Promise<ConnectedAccount>;
+  validate(post: Post, target: PostTarget): Promise<ValidationResult>;
+  publish(post: Post, target: PostTarget): Promise<PublishResult>;
+  refreshToken?(): Promise<TokenRefreshResult>;
+  normalizeError(error: unknown): NormalizedError;
+}
+```
 
-Capabilities should be explicit and account-aware. A platform may support different operations for different account types or permissions.
+Rules:
 
-Potential capabilities:
-- Text-only post.
-- Single image.
-- Multiple images.
-- Video.
-- Link post.
-- Scheduled publication through Postaal.
-- Provider-side scheduling (not assumed).
-- Retrieve published post status.
+- Adapters return Postaal types. Provider response objects do not leave the adapter.
+- Adapters do not write to the database; they return a result and `publishing` records
+  it.
+- Capability checks are per account, not per platform: the same platform may permit
+  more for one account type than another.
+- Capabilities: text-only post, single image, multiple images, video (not v1.0),
+  link post, Postaal-side scheduling (always), provider-side scheduling (not assumed),
+  status lookup.
+- Media delivery is implemented per adapter. There is no shared upload helper that
+  pretends every platform behaves the same.
 
-## Important distinction
+## Media delivery per platform
 
-Postaal scheduling means Postaal's own worker triggers publication at a selected time. It does not imply that every social platform provides native scheduled-post APIs.
+| Platform | Flow | Local-only compatible |
+|---|---|---|
+| LinkedIn | Initialize upload, receive upload URL, PUT bytes, publish with asset URN | Yes |
+| X | Upload media, receive media ID, publish with ID | Yes |
+| Facebook | Upload to the Page media endpoint, publish | Yes |
+| Instagram | Create container with a publicly reachable `image_url`, poll processing, publish container | No — blocked |
 
-## Research policy
+Instagram's requirement is a platform constraint, not an implementation detail. Options
+when it is addressed: a narrowly scoped temporary HTTPS relay that serves only files
+explicitly queued for publication (unguessable, expiring URLs, never the filesystem),
+or deferring Instagram until a hosted v3.0 direction exists. Either way it needs an
+ADR before code.
 
-Use official platform documentation as the primary source. Record the research date and link the exact documentation in a platform-specific integration note before implementation.
+## OAuth in a local-only install
+
+- Verify each provider's redirect rules before designing the callback route.
+- Loopback redirects may be allowed for development apps but not for production apps.
+- Never solve a redirect problem by making the application publicly reachable.
+- Validate `state`, use PKCE where supported, and store tokens encrypted.
+- Disconnecting an account deletes or revokes credentials and keeps published history.
+
+## Explicit non-claims
+
+- A preview does not prove a platform will accept or render a post exactly as shown.
+- Postaal-side scheduling is not provider-native scheduling.
+- Passing a unit test with a mock is not evidence that a platform integration works.

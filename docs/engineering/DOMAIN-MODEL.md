@@ -1,68 +1,146 @@
 # Domain Model
 
-This document describes the logical model, not a finalized ORM schema.
+Logical model for v1.0. Physical tables, types, and constraints are in
+[`DATABASE-SCHEMA.md`](DATABASE-SCHEMA.md). Decisions behind the shape are in
+[ADR-0001](../adr/0001-sqlite-database.md) to
+[ADR-0005](../adr/0005-single-owner-installation.md).
+
+## Scope
+
+One installation, one owner, many posts, and one publication per destination. There
+are no organizations, teams, or per-user isolation.
 
 ## Entities
 
-### User
-Owns preferences, social accounts, posts, and installation-level user data.
+### InstallationSettings
 
-Potential fields: `id`, `email`, `name`, `passwordHash` (if applicable), `timezone`, `createdAt`, `updatedAt`.
+Installation-level configuration and the single owner identity.
+
+| Field | Meaning |
+|---|---|
+| `id` | Fixed single row |
+| `ownerEmail` | Owner's sign-in identity |
+| `passwordHash` | Argon2id or bcrypt hash; never a raw password |
+| `timezone` | IANA zone used for all display and schedule input |
+| `createdAt`, `updatedAt` | Audit instants |
+
+Owns: nothing. There is no `users` table and no `userId` on content.
 
 ### SocialAccount
-Represents one connected provider account.
 
-Potential fields: `id`, `userId`, `platform`, `platformAccountId`, `accountName`, `accountHandle`, `accountAvatar`, encrypted token references/values, `tokenExpiresAt`, `connectionStatus`, timestamps.
+One authorized provider account.
+
+| Field | Meaning |
+|---|---|
+| `platform` | `x`, `instagram`, `facebook`, `linkedin` |
+| `platformAccountId` | Provider's stable account identifier |
+| `accountName`, `accountHandle`, `accountAvatarUrl` | Display identity |
+| `accessTokenEncrypted`, `refreshTokenEncrypted` | Ciphertext at rest |
+| `tokenExpiresAt` | Drives `needs_reauth` before publishing |
+| `connectionStatus` | `connected`, `needs_reauth`, `revoked`, `error` |
 
 ### Post
-Represents the shared composition and scheduling container.
 
-Potential fields: `id`, `userId`, `masterContent`, `status`, `scheduledAt`, `publishedAt`, timestamps.
+The shared composition and scheduling container.
+
+| Field | Meaning |
+|---|---|
+| `masterContent` | Base caption used by every destination without an override |
+| `status` | Derived publication state (see `PUBLISHING-LIFECYCLE.md`) |
+| `scheduledAt` | Intended UTC instant, or null |
+| `publishedAt` | First successful destination publication, or null |
 
 ### PostTarget
-Represents one post's publication to one connected social account.
 
-Potential fields: `id`, `postId`, `socialAccountId`, `platformContent`, `status`, `platformPostId`, `errorCode`, `errorMessage`, `publishedAt`, timestamps.
+One post going to one connected account. The unit of publishing.
 
-### PostMedia
-Represents media attached to a post.
+| Field | Meaning |
+|---|---|
+| `platformContent` | Optional override; null means inherit `masterContent` |
+| `status` | Independent lifecycle state |
+| `platformPostId` | Provider's post identifier once published |
+| `publishedAt` | Instant this destination succeeded |
+| `lastError` | Normalized, secret-free summary |
 
-Potential fields: `id`, `postId`, `storageKey`, `originalFilename`, `mimeType`, `fileSize`, `width`, `height`, `orderIndex`, timestamps.
+### MediaAsset
 
-### PublishingJob
-Represents durable work for one destination publication attempt.
+A stored file and its metadata. Contents are on the local filesystem
+(ADR-0002); this entity holds only metadata and a relative path.
 
-Potential fields: `id`, `postTargetId`, `scheduledAt`, `status`, `attemptCount`, `nextAttemptAt`, `lockedAt`, `lastError`, `idempotencyKey`, timestamps.
+Attaches to posts through `PostMedia` (`postId`, `mediaAssetId`, `orderIndex`).
 
-### Optional supporting entities
-- `Session` or auth-provider records.
-- `SystemSetting`.
-- `AIUsageLog`.
-- `AuditLog`.
+### PublishAttempt
+
+An immutable record of one call to a platform for one target: when it started, when
+it finished, the outcome (`PUBLISHED`, `FAILED`, `UNCERTAIN`), the redacted provider
+response, and a normalized error.
+
+### ScheduledJob
+
+Durable work for one target: `runAt`, status, attempt count, and a lease
+(`lockedAt`, `lockedBy`). The worker's only source of truth for what to do next.
 
 ## Relationships
 
-- User 1 -> many SocialAccounts.
-- User 1 -> many Posts.
-- Post 1 -> many PostTargets.
-- Post 1 -> many PostMedia.
-- SocialAccount 1 -> many PostTargets.
-- PostTarget 1 -> many PublishingJob attempts.
+```text
+InstallationSettings (1)
 
-## Important invariants
+Post 1 --- n PostTarget n --- 1 SocialAccount
+Post 1 --- n PostMedia  n --- 1 MediaAsset
+PostTarget 1 --- n PublishAttempt
+PostTarget 1 --- 1 ScheduledJob
+```
 
-- A PostTarget belongs to exactly one Post and one SocialAccount.
-- A post cannot target the same account twice.
-- A destination result must not overwrite another destination's result.
-- A published destination should retain its provider post ID when available.
-- A scheduled instant is stored as UTC.
-- Token material must never be exposed in ordinary API responses.
-- A retry must reuse a stable idempotency strategy for the logical publication operation.
+## Invariants
 
-## Questions before schema finalization
+These are domain rules. Tests must assert them; adapters may not work around them.
 
-- Single-user installation or multi-user installation?
-- Are media assets reusable independently of a post? If yes, introduce a first-class MediaAsset entity and join table.
-- Should post content revisions be stored?
-- Should publishing jobs be created at schedule time or derived from PostTarget state?
-- What is the retention policy for logs and deleted posts?
+1. A `PostTarget` belongs to exactly one post and one social account.
+2. A post cannot target the same account twice.
+3. A target's outcome never overwrites another target's outcome.
+4. A published target keeps its `platformPostId` when the provider supplies one.
+5. Every scheduled instant is stored in UTC; display converts to
+   `InstallationSettings.timezone`.
+6. Token material never appears in an ordinary API response, log, or error message.
+7. A retry of the same logical publication reuses a stable identity; a retry must not
+   create a second post on the platform.
+8. Post status is derived from target statuses, never set independently by an adapter.
+9. A published target is never silently re-queued by a scheduler or a restart.
+10. `UNCERTAIN` is a first-class outcome, not a failure to be retried blindly.
+
+## State ownership
+
+| State | Written by |
+|---|---|
+| `Post.status`, `Post.scheduledAt` | `posts` module, from target results and owner actions |
+| `PostTarget.status`, `platformPostId` | `publishing` module only |
+| `ScheduledJob.*` | `scheduling` module creates; worker claims and completes |
+| `SocialAccount.connectionStatus` | `social-accounts` module after auth or a 401/403 |
+| `MediaAsset.*` | `media` module on upload |
+
+Adapters return results. They do not write to the database.
+
+## Deletion policy
+
+- Deleting a draft removes its targets and their pending jobs.
+- Deleting a scheduled post cancels its jobs first; the post remains until no job is
+  in flight.
+- Published posts and their attempts are not deleted by default. A discard action
+  that hides a published post is a UI concern, not row deletion.
+- Media referenced by a published target is not deleted by the library's delete
+  action; mark it unused instead.
+
+## Deliberately absent
+
+- Users, teams, roles, permissions, invitations.
+- Workspaces, projects, campaigns, labels.
+- Comment or inbox entities.
+- Analytics or engagement metrics.
+- Post revision history (revisit only if drafts need undo across sessions).
+
+## Open questions
+
+- Is media reuse across posts in v1.0? (Decides `PostMedia` vs `postId` on the asset.)
+- Do drafts need revision history, or is last-write-wins enough for one owner?
+- Should a published post be editable, duplicated, or both?
+- What retention applies to attempts and provider responses?

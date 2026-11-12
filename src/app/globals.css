@@ -1,0 +1,185 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Postaal design tokens.
+  Values are transcribed from the Figma source of truth (Postaal Studio design)
+  so the application matches the approved design instead of inventing one.
+*/
+:root {
+  /* Surfaces */
+  --postaal-page: #f9f9fc;
+  --postaal-surface: #ffffff;
+  --postaal-sidebar: #fcfcfe;
+  --postaal-control: #f8f8fc;
+  --postaal-tabbar: #fbfbfe;
+  --postaal-nav-selected: #f2f0fc;
+  --postaal-hover: #f6f6fb;
+
+  /* Borders */
+  --postaal-border: #e7e8f3;
+  --postaal-border-soft: #eeeef5;
+  --postaal-border-strong: #eeeff6;
+  --postaal-circle-border: #d8daed;
+
+  /* Ink */
+  --postaal-ink: #101323;
+  --postaal-ink-strong: #0b0d18;
+  --postaal-ink-muted: #727793;
+  --postaal-ink-subtle: #595e7a;
+  --postaal-ink-lavender: #747a98;
+
+  /* Accent */
+  --postaal-accent: #7052ff;
+  --postaal-accent-soft: #8c72ff;
+  --postaal-accent-contrast: #ffffff;
+
+  /* Controls */
+  --postaal-dark: #191a1d;
+  --postaal-switch-off: #bfc1d2;
+  --postaal-avatar: #9499ba;
+
+  /* Status */
+  --postaal-danger: #d92d20;
+  --postaal-warning: #b54708;
+  --postaal-success: #067647;
+  --postaal-info: #175cd3;
+
+  /* Radii */
+  --postaal-radius-xs: 8px;
+  --postaal-radius-sm: 10px;
+  --postaal-radius-md: 12px;
+  --postaal-radius-lg: 13px;
+  --postaal-radius-xl: 15px;
+  --postaal-radius-2xl: 18px;
+
+  /* Elevation */
+  --postaal-shadow-card: 0px 2px 4px rgba(51, 51, 102, 0.025);
+  --postaal-shadow-tab: 0px 1px 4px rgba(51, 51, 102, 0.09);
+}
+
+.dark {
+  --postaal-page: #0c0e18;
+  --postaal-surface: #141726;
+  --postaal-sidebar: #10131f;
+  --postaal-control: #191d2e;
+  --postaal-tabbar: #191d2e;
+  --postaal-nav-selected: #241f45;
+  --postaal-hover: #1c2032;
+
+  --postaal-border: #262b40;
+  --postaal-border-soft: #202437;
+  --postaal-border-strong: #262b40;
+  --postaal-circle-border: #343a52;
+
+  --postaal-ink: #f2f3f9;
+  --postaal-ink-strong: #ffffff;
+  --postaal-ink-muted: #a0a5c0;
+  --postaal-ink-subtle: #b3b8d0;
+  --postaal-ink-lavender: #9aa0bd;
+
+  --postaal-accent: #9d86ff;
+  --postaal-accent-soft: #b3a2ff;
+  --postaal-accent-contrast: #12091f;
+
+  --postaal-dark: #f2f3f9;
+  --postaal-switch-off: #4b5169;
+  --postaal-avatar: #9499ba;
+
+  --postaal-danger: #f97066;
+  --postaal-warning: #fdb022;
+  --postaal-success: #47cd89;
+  --postaal-info: #84adff;
+
+  --postaal-shadow-card: 0px 2px 4px rgba(0, 0, 0, 0.24);
+  --postaal-shadow-tab: 0px 1px 4px rgba(0, 0, 0, 0.36);
+}
+
+@theme inline {
+  --color-page: var(--postaal-page);
+  --color-surface: var(--postaal-surface);
+  --color-sidebar: var(--postaal-sidebar);
+  --color-control: var(--postaal-control);
+  --color-tabbar: var(--postaal-tabbar);
+  --color-nav-selected: var(--postaal-nav-selected);
+  --color-hover: var(--postaal-hover);
+
+  --color-border: var(--postaal-border);
+  --color-border-soft: var(--postaal-border-soft);
+  --color-border-strong: var(--postaal-border-strong);
+  --color-circle-border: var(--postaal-circle-border);
+
+  --color-ink: var(--postaal-ink);
+  --color-ink-strong: var(--postaal-ink-strong);
+  --color-ink-muted: var(--postaal-ink-muted);
+  --color-ink-subtle: var(--postaal-ink-subtle);
+  --color-ink-lavender: var(--postaal-ink-lavender);
+
+  --color-accent: var(--postaal-accent);
+  --color-accent-soft: var(--postaal-accent-soft);
+  --color-accent-contrast: var(--postaal-accent-contrast);
+
+  --color-ink-inverse: var(--postaal-dark);
+  --color-switch-off: var(--postaal-switch-off);
+  --color-avatar: var(--postaal-avatar);
+
+  --color-danger: var(--postaal-danger);
+  --color-warning: var(--postaal-warning);
+  --color-success: var(--postaal-success);
+  --color-info: var(--postaal-info);
+
+  --radius-xs: var(--postaal-radius-xs);
+  --radius-sm: var(--postaal-radius-sm);
+  --radius-md: var(--postaal-radius-md);
+  --radius-lg: var(--postaal-radius-lg);
+  --radius-xl: var(--postaal-radius-xl);
+  --radius-2xl: var(--postaal-radius-2xl);
+
+  --shadow-card: var(--postaal-shadow-card);
+  --shadow-tab: var(--postaal-shadow-tab);
+
+  --font-sans: var(--font-roboto), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: var(--postaal-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--postaal-page);
+    color: var(--postaal-ink);
+    font-family: var(--font-roboto), ui-sans-serif, system-ui, -apple-system,
+      "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--postaal-accent);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--postaal-nav-selected);
+    color: var(--postaal-ink);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Preview surfaces keep platform-native colors in both themes. */
+.preview-surface {
+  background-color: #ffffff;
+  color: #101323;
+}

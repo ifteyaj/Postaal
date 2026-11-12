@@ -4,7 +4,7 @@
 
 Postaal is a self-hosted social media workspace for creators, freelancers, businesses, and small teams. It brings content composition, realistic platform previews, scheduling, and publishing into one application.
 
-> Project status: Product direction locked; technical implementation decisions are still being finalized. This repository starter contains product and engineering documentation, not an implemented application.
+> Project status: Product direction locked. A **frontend prototype** (Next.js App Router, TypeScript, Tailwind CSS) now implements the Studio, live platform previews, Calendar, Queue, Media Library and Accounts with simulated data only — no authentication, database, OAuth or real publishing. Engineering decisions for the backend remain to be finalized.
 
 ## Product direction
 
@@ -26,6 +26,20 @@ Postaal is a self-hosted social media workspace for creators, freelancers, busin
 4. Review realistic platform-specific previews.
 5. Save as a draft, publish now, or schedule.
 6. Track publishing results per destination.
+
+## Frontend prototype
+
+The app shell and Studio are implemented as a browser-only prototype. State lives in `localStorage`; publishing and AI captions are local simulations and are labelled as such in the UI.
+
+```bash
+npm install
+npm run dev      # http://localhost:3000
+npm run build    # production build + typecheck
+npm run lint
+npm run typecheck
+```
+
+Key source paths: `src/app/(workspace)` (routes), `src/components/studio` (composer), `src/components/previews` (per-platform preview engine), `src/lib` (domain types, platform metadata, store).
 
 ## Documentation
 

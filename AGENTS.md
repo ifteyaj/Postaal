@@ -1,0 +1,80 @@
+# Agent Instructions
+
+These instructions apply to AI coding agents working in this repository.
+
+## Before starting
+
+1. Read `README.md`.
+2. Read the relevant product and engineering documents under `docs/`.
+3. Inspect the existing codebase before proposing changes.
+4. Identify assumptions and unresolved decisions. Do not silently turn proposals into locked decisions.
+
+## Product context
+
+Postaal is a self-hosted social media workspace. The MVP direction is:
+- Studio for composing posts and uploading media.
+- Realistic previews for supported social platforms.
+- Draft management.
+- Scheduling and calendar/queue management.
+- Publishing through supported social integrations.
+- AI caption assistance as an optional capability.
+
+The target audience includes individual creators and businesses. Advanced enterprise collaboration, analytics, social listening, inbox management, and billing are outside the initial MVP.
+
+## Engineering principles
+
+- Prefer a modular monolith. Do not introduce microservices without an explicit decision.
+- Keep domain logic independent of specific social API vendors.
+- Keep preview rendering independent from OAuth credentials and publishing APIs.
+- Model publication outcomes per destination. A partial failure must not erase successful results.
+- Make background jobs persistent, retry-safe, observable, and idempotent.
+- Store scheduled instants in UTC; display them using the user's configured timezone.
+- Validate all external input at system boundaries.
+- Keep secrets and OAuth tokens server-side only.
+- Use strong TypeScript types and explicit error handling.
+- Prefer small, reviewable changes over broad rewrites.
+- Avoid unnecessary abstractions and speculative frameworks.
+
+## Platform integration rules
+
+Before implementing a connector:
+1. Verify current official platform documentation.
+2. Confirm supported account types and required permissions.
+3. Confirm app review or approval requirements.
+4. Confirm supported media types, sizes, aspect ratios, and publishing formats.
+5. Confirm rate limits, token lifetime, refresh behavior, and error semantics.
+6. Document limitations and test cases.
+
+Never invent API capabilities or imply that a preview guarantees exact rendering on every device.
+
+## Data and security rules
+
+- Never commit `.env` files, credentials, access tokens, or private keys.
+- Never expose provider tokens to browser code.
+- Encrypt provider credentials at rest using a documented key-management approach.
+- Do not log secrets, authorization codes, or full tokens.
+- Validate actual uploaded file content, not just extensions or client-provided MIME types.
+- Protect OAuth flows against CSRF/state tampering.
+- Use authorization checks on every user-owned resource.
+- Make retries safe against duplicate publication.
+
+## Change workflow
+
+For each task:
+1. State the intended outcome and scope.
+2. Inspect relevant files and conventions.
+3. Implement the smallest complete change.
+4. Add or update tests.
+5. Run relevant checks.
+6. Summarize changed files, validation performed, and known limitations.
+7. Update documentation if behavior, architecture, setup, or decisions changed.
+
+## Documentation maintenance
+
+- Product behavior belongs in `docs/product/`.
+- Architecture and technical contracts belong in `docs/engineering/`.
+- UI rules belong in `docs/design/`.
+- Sequencing and delivery plans belong in `docs/roadmap/`.
+- Consequential decisions belong in `docs/adr/`.
+- Keep `README.md` concise and navigational.
+- Mark uncertain items as `Proposed`, `Open`, or `Needs validation`.

@@ -74,9 +74,15 @@ For each task:
 - Product behavior belongs in `docs/product/`.
 - Architecture and technical contracts belong in `docs/engineering/`.
 - UI rules belong in `docs/design/`.
-- Sequencing and delivery plans belong in `docs/roadmap/`.
-- Consequential decisions belong in `docs/adr/`.
+- Sequencing belongs in `docs/roadmap/`; per-phase specifications belong in
+  `docs/phases/`. Do not maintain a phase plan in both places.
+- Consequential decisions belong in `docs/adr/`. The register in
+  `docs/decisions/ARCHITECTURE-DECISIONS.md` indexes them and lists what is still
+  unapproved; it must not restate ADR detail.
+- Update `docs/roadmap/DEVELOPMENT-STATUS.md` whenever implementation progress
+  changes, and add an entry to `docs/decisions/CHANGELOG.md` for notable changes.
 - Keep `README.md` concise and navigational.
+- Never silently change an accepted decision. Supersede it with a new ADR.
 - Mark uncertain items as `Proposed`, `Open`, or `Needs validation`.
 
 <!-- BEGIN:nextjs-agent-rules -->

@@ -1,7 +1,8 @@
 # Postaal Product Requirements Document
 
-**Version:** 1.0  
-**Status:** Direction locked; detailed implementation decisions remain open.
+**Version:** 1.1  
+**Status:** Product direction locked. v1.0 architecture accepted (ADR-0001 to ADR-0005).
+Implementation is in Phase 0; see [`../roadmap/DEVELOPMENT-STATUS.md`](../roadmap/DEVELOPMENT-STATUS.md).
 
 ## 1. Vision
 
@@ -39,7 +40,7 @@ Needs: manage multiple accounts, reduce repetitive work, preview content, mainta
 
 Needs: manage brand accounts, plan content, adapt captions by platform, and track publishing outcomes.
 
-The MVP should support an individual owner and a small-team use case without implementing enterprise-grade roles or approval workflows.
+One installation serves exactly one owner (ADR-0005). A small business can run a single installation under one owner account; multi-user access, invitations, roles, and approval workflows are not part of v1.0.
 
 ## 4. Problems
 
@@ -60,8 +61,8 @@ The MVP should support an individual owner and a small-team use case without imp
 
 ## 6. MVP capabilities
 
-- Self-hosted deployment and installation configuration.
-- Authentication for a private installation.
+- Self-hosted installation with first-run owner setup.
+- Authentication for a private, local-only installation.
 - Connect and manage supported social accounts.
 - Unified post composer.
 - Platform destination selection.
@@ -162,10 +163,15 @@ Post-level:
 
 Destination-level:
 - PENDING
+- QUEUED
 - PUBLISHING
-- SUCCESS
+- PUBLISHED
 - FAILED
+- NEEDS_ATTENTION
 - CANCELLED
+
+`NEEDS_ATTENTION` covers an unknown publishing outcome or exhausted retries. The full
+transition rules are in [`../engineering/PUBLISHING-LIFECYCLE.md`](../engineering/PUBLISHING-LIFECYCLE.md).
 
 The post-level status is derived from or coordinated with destination-level outcomes. Document the exact transition rules before implementation.
 
@@ -174,10 +180,11 @@ The post-level status is derived from or coordinated with destination-level outc
 - Responsive desktop/tablet/mobile experience.
 - Fast-feeling preview updates.
 - Secure credential storage.
-- Persistent scheduled jobs.
-- Safe worker restarts.
+- Persistent scheduled jobs processed by a worker independent of the browser.
+- Safe worker restarts and restart recovery.
 - Modular platform adapters.
-- Docker-compatible deployment.
+- Local-only access by default; no public exposure required to operate.
+- Docker Compose deployment with persistent data and media volumes.
 - Accessible keyboard navigation and controls.
 - Structured logs and useful diagnostics.
 - Documented backup and restore process.
@@ -194,6 +201,10 @@ The post-level status is derived from or coordinated with destination-level outc
 - Template marketplace.
 - Native mobile applications.
 - Billing/subscription management.
+- Multi-user installations, invitations, roles, and approval workflows (ADR-0005).
+- Public hosting, remote access, and tunnels (ADR-0004).
+- Video publishing.
+- Object storage as a required backend (ADR-0002).
 
 ## 12. Success criteria
 
@@ -202,6 +213,7 @@ The MVP is successful when a user can install Postaal, securely connect at least
 ## 13. Risks
 
 - Platform API permissions and review requirements.
+- Instagram's public media URL requirement, which conflicts with local-only hosting.
 - Self-hosting setup complexity.
 - Platform UI changes affecting preview fidelity.
 - External publishing failures and rate limits.

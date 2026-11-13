@@ -59,7 +59,7 @@ export function PlatformSelector({
                 onClick={() => onToggle(platform.id)}
                 aria-pressed={isSelected}
                 className={cn(
-                  "relative flex h-16 items-center gap-3 rounded-md border bg-surface py-2 pr-2 transition-colors",
+                  "relative flex h-14 items-center gap-3 rounded-md border bg-surface py-2 pr-2 transition-colors",
                   metrics.minWidth,
                   metrics.paddingLeft,
                   isSelected

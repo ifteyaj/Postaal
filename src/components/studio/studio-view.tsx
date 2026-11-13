@@ -345,8 +345,6 @@ export function StudioView() {
             onSelectAll={selectAllPlatforms}
           />
 
-          <div className="h-px w-full bg-border" />
-
           <ContentEditor
             value={caption}
             onChange={(value) => updatePost(post.id, { masterContent: value })}
